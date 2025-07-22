@@ -1,4 +1,4 @@
-import { PageHeaderSkeleton, MunicipalityGridSkeleton, MunicipalityListSkeleton } from '@/components/ui/loading-skeleton';
+import { PageHeaderSkeleton, MunicipalityGridSkeleton } from '@/components/ui/loading-skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 

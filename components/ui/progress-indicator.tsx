@@ -14,14 +14,12 @@ export interface ProcessStep {
 
 interface MultiStepProgressProps {
   steps: ProcessStep[];
-  currentStep?: number;
   showProgress?: boolean;
   className?: string;
 }
 
 export function MultiStepProgress({ 
   steps, 
-  currentStep = 0,
   showProgress = true,
   className 
 }: MultiStepProgressProps) {
@@ -42,7 +40,7 @@ export function MultiStepProgress({
       )}
 
       <div className="space-y-3">
-        {steps.map((step, index) => (
+        {steps.map((step) => (
           <div key={step.id} className="flex items-start gap-3">
             <div className="flex-shrink-0 mt-0.5">
               {step.status === 'completed' ? (
@@ -135,18 +133,3 @@ export function SimpleProgress({
   );
 }
 
-// Add this to your global CSS for the indeterminate animation
-const progressAnimation = `
-@keyframes progress-indeterminate {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.animate-progress-indeterminate {
-  animation: progress-indeterminate 1.5s ease-in-out infinite;
-}
-`;

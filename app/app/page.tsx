@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { MultiStepProgress, SimpleProgress, type ProcessStep } from '@/components/ui/progress-indicator';
+import { MultiStepProgress, type ProcessStep } from '@/components/ui/progress-indicator';
 import type { ScrapeResult } from '@/types/api';
 
 function AppContent() {
@@ -124,7 +124,51 @@ function AppContent() {
 
   const generateOpraRequest = async (ordinanceId: string) => {
     setLoading(true);
+    setCurrentOperation('generating');
+    
+    // Initialize generation steps
+    const generationSteps: ProcessStep[] = [
+      {
+        id: 'analyze',
+        label: 'Analyzing ordinance provisions',
+        description: 'Identifying relevant sections',
+        status: 'in-progress',
+        progress: 0,
+      },
+      {
+        id: 'match',
+        label: 'Matching OPRA categories',
+        description: 'Determining required records',
+        status: 'pending',
+      },
+      {
+        id: 'generate',
+        label: 'Generating request',
+        description: 'Creating tailored OPRA request',
+        status: 'pending',
+      },
+      {
+        id: 'pdf',
+        label: 'Creating PDF',
+        description: 'Formatting for submission',
+        status: 'pending',
+      }
+    ];
+    setProcessSteps(generationSteps);
+    
     toast.opra.analyzing();
+    
+    // Simulate progress
+    let currentStepIdx = 0;
+    const progressInterval = setInterval(() => {
+      setProcessSteps(prev => {
+        const updated = [...prev];
+        if (currentStepIdx < updated.length && updated[currentStepIdx] && updated[currentStepIdx].progress !== undefined) {
+          updated[currentStepIdx].progress = Math.min(updated[currentStepIdx].progress! + 25, 90);
+        }
+        return updated;
+      });
+    }, 300);
     
     try {
       // First analyze the ordinance
@@ -135,6 +179,16 @@ function AppContent() {
       if (!analyzeResponse.ok) {
         throw new Error('Failed to analyze ordinance');
       }
+
+      // Move to matching step
+      clearInterval(progressInterval);
+      setProcessSteps(prev => {
+        const updated = [...prev];
+        updated[0] = { ...updated[0], status: 'completed', progress: 100 };
+        updated[1] = { ...updated[1], status: 'in-progress', progress: 0 };
+        return updated;
+      });
+      currentStepIdx = 1;
 
       // Then generate the OPRA request with PDF
       toast.dismiss();
@@ -154,6 +208,9 @@ function AppContent() {
         throw new Error(data.error || 'Failed to generate OPRA request');
       }
 
+      // Complete all steps
+      setProcessSteps(prev => prev.map(step => ({ ...step, status: 'completed', progress: 100 })));
+
       setOpraRequest({
         id: data.id,
         pdfUrl: data.pdfUrl,
@@ -163,18 +220,73 @@ function AppContent() {
       toast.dismiss();
       toast.opra.success();
     } catch (err) {
+      clearInterval(progressInterval);
+      setProcessSteps(prev => {
+        const updated = [...prev];
+        const currentIdx = updated.findIndex(s => s.status === 'in-progress');
+        if (currentIdx !== -1) {
+          updated[currentIdx] = { ...updated[currentIdx], status: 'error' };
+        }
+        return updated;
+      });
+      
       toast.dismiss();
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       toast.opra.error(errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
+      setTimeout(() => setCurrentOperation(null), 2000);
     }
   };
 
   const handleProcess = async (ordinanceId: string) => {
     setLoading(true);
+    setCurrentOperation('processing');
+    
+    // Initialize processing steps
+    const processingSteps: ProcessStep[] = [
+      {
+        id: 'chunk',
+        label: 'Chunking ordinance text',
+        description: 'Breaking down into searchable sections',
+        status: 'in-progress',
+        progress: 0,
+      },
+      {
+        id: 'embed',
+        label: 'Generating embeddings',
+        description: 'Creating vector representations',
+        status: 'pending',
+      },
+      {
+        id: 'index',
+        label: 'Indexing in database',
+        description: 'Enabling semantic search',
+        status: 'pending',
+      }
+    ];
+    setProcessSteps(processingSteps);
+    
     const toastId = toast.processing.start();
+    
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setProcessSteps(prev => {
+        const updated = [...prev];
+        const currentIdx = updated.findIndex(s => s.status === 'in-progress');
+        if (currentIdx !== -1 && updated[currentIdx].progress !== undefined) {
+          updated[currentIdx].progress = Math.min(updated[currentIdx].progress + 15, 90);
+          
+          // Move to next step
+          if (updated[currentIdx].progress >= 90 && currentIdx < updated.length - 1) {
+            updated[currentIdx] = { ...updated[currentIdx], status: 'completed', progress: 100 };
+            updated[currentIdx + 1] = { ...updated[currentIdx + 1], status: 'in-progress', progress: 0 };
+          }
+        }
+        return updated;
+      });
+    }, 400);
     
     try {
       const response = await fetch(`/api/ordinances/${ordinanceId}/process`, {
@@ -186,18 +298,34 @@ function AppContent() {
         throw new Error(data.error || 'Failed to process ordinance');
       }
 
+      clearInterval(progressInterval);
+      setProcessSteps(prev => prev.map(step => ({ ...step, status: 'completed', progress: 100 })));
+
       toast.dismiss(toastId);
       toast.processing.success(data.chunksCreated);
       
       // Auto-generate OPRA request after processing
       await generateOpraRequest(ordinanceId);
     } catch (err) {
+      clearInterval(progressInterval);
+      setProcessSteps(prev => {
+        const updated = [...prev];
+        const currentIdx = updated.findIndex(s => s.status === 'in-progress');
+        if (currentIdx !== -1) {
+          updated[currentIdx] = { ...updated[currentIdx], status: 'error' };
+        }
+        return updated;
+      });
+      
       toast.dismiss(toastId);
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       toast.processing.error(errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
+      if (currentOperation === 'processing') {
+        setTimeout(() => setCurrentOperation(null), 2000);
+      }
     }
   };
 
@@ -235,12 +363,34 @@ function AppContent() {
               disabled={loading || !municipalityName}
               className="w-full"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? 'Searching...' : 'Search for Ordinance'}
+              {loading && currentOperation === 'scraping' ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                'Search for Ordinance'
+              )}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Progress Indicator */}
+      {loading && currentOperation && processSteps.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg">
+              {currentOperation === 'scraping' && 'Searching for Ordinance'}
+              {currentOperation === 'processing' && 'Processing Ordinance'}
+              {currentOperation === 'generating' && 'Generating OPRA Request'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MultiStepProgress steps={processSteps} showProgress={true} />
+          </CardContent>
+        </Card>
+      )}
 
       {error && (
         <Alert variant="destructive" className="mb-4">
@@ -307,8 +457,16 @@ function AppContent() {
                   onClick={() => handleProcess(result.ordinance!.id)}
                   className="mt-4"
                   variant="secondary"
+                  disabled={loading}
                 >
-                  Process Ordinance (Chunk & Embed)
+                  {loading && currentOperation === 'processing' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Process Ordinance (Chunk & Embed)'
+                  )}
                 </Button>
               </CardContent>
             </Card>
