@@ -115,3 +115,99 @@ UPSTASH_REDIS_REST_TOKEN=
 4. Use Prisma for all database operations
 5. Cache expensive operations with Upstash Redis
 6. Stream AI responses for better UX
+
+## TODO List
+
+### 🚀 High Priority - Core Functionality
+
+#### UI/UX Improvements
+- [ ] Create proper landing page with feature explanation
+- [ ] Build municipality search/browse page with filtering
+- [ ] Add loading skeletons for all async operations
+- [ ] Implement error boundaries with user-friendly messages
+- [ ] Add toast notifications for actions (success/error)
+- [ ] Create mobile-responsive layouts
+
+#### Request Management
+- [ ] Build request history page showing all generated OPRAs
+- [ ] Add request status tracking (draft, sent, responded, etc.)
+- [ ] Implement request editing before PDF generation
+- [ ] Create request templates for common scenarios
+- [ ] Add ability to regenerate PDFs with modifications
+
+#### Ordinance Management
+- [ ] Build ordinance viewer with syntax highlighting
+- [ ] Add side-by-side comparison view (ordinance + OPRA)
+- [ ] Implement ordinance search functionality
+- [ ] Create ordinance update detection system
+- [ ] Add manual ordinance text input option
+
+### 🛡️ Medium Priority - Production Readiness
+
+#### Security & Performance
+- [ ] Implement rate limiting with Upstash Redis
+- [ ] Add request caching for repeated operations
+- [ ] Set up background jobs for long-running tasks
+- [ ] Implement proper API key management
+- [ ] Add request validation and sanitization
+
+#### Data Management
+- [ ] Create data export functionality (CSV, JSON)
+- [ ] Implement soft deletes for all records
+- [ ] Add audit logging for all operations
+- [ ] Build backup and restore functionality
+- [ ] Create data retention policies
+
+#### Integration Features
+- [ ] Add email integration to send requests directly
+- [ ] Implement webhook notifications for status updates
+- [ ] Create public API for third-party integrations
+- [ ] Add calendar integration for deadline tracking
+- [ ] Build Zapier/Make.com integration
+
+### 🎯 Low Priority - Nice to Have
+
+#### Advanced Features
+- [ ] Implement user authentication and accounts
+- [ ] Create organization/team functionality
+- [ ] Build analytics dashboard with insights
+- [ ] Add multi-language support
+- [ ] Create browser extension for quick scraping
+
+#### Developer Experience
+- [ ] Add comprehensive test suite (unit, integration, e2e)
+- [ ] Create API documentation with examples
+- [ ] Build developer portal with API keys
+- [ ] Add performance monitoring (Sentry, LogRocket)
+- [ ] Create contribution guidelines
+
+#### Business Features
+- [ ] Implement usage-based billing
+- [ ] Add subscription management
+- [ ] Create admin dashboard
+- [ ] Build customer support tools
+- [ ] Add white-label options
+
+### 🐛 Bug Fixes & Improvements
+
+- [ ] Fix ESLint warnings in build
+- [ ] Improve TypeScript strict mode compliance
+- [ ] Optimize bundle size
+- [ ] Add proper SEO meta tags
+- [ ] Implement proper accessibility (WCAG 2.1)
+
+### 📚 Documentation Needs
+
+- [ ] Create user guide with screenshots
+- [ ] Write API documentation
+- [ ] Add inline code documentation
+- [ ] Create video tutorials
+- [ ] Build interactive demo
+
+### 🧪 Testing Requirements
+
+- [ ] Unit tests for all utility functions
+- [ ] Integration tests for API routes
+- [ ] E2E tests for critical user flows
+- [ ] Performance testing for vector search
+- [ ] Load testing for concurrent users
