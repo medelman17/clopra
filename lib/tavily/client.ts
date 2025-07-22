@@ -5,7 +5,7 @@ const TavilySearchResultSchema = z.object({
   url: z.string(),
   content: z.string(),
   score: z.number(),
-  publishedDate: z.string().nullable(),
+  publishedDate: z.string().nullable().optional(),
 });
 
 const TavilyResponseSchema = z.object({

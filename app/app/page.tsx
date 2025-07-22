@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { MultiStepProgress, SimpleProgress, type ProcessStep } from '@/components/ui/progress-indicator';
 import type { ScrapeResult } from '@/types/api';
 
 function AppContent() {
@@ -22,6 +23,8 @@ function AppContent() {
     pdfUrl: string;
     requestText: string;
   } | null>(null);
+  const [processSteps, setProcessSteps] = useState<ProcessStep[]>([]);
+  const [currentOperation, setCurrentOperation] = useState<string | null>(null);
 
   useEffect(() => {
     const municipalityParam = searchParams.get('municipality');
@@ -41,8 +44,46 @@ function AppContent() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setOpraRequest(null);
+    setCurrentOperation('scraping');
+
+    // Initialize scraping steps
+    const scrapingSteps: ProcessStep[] = [
+      {
+        id: 'search',
+        label: 'Searching municipal websites',
+        description: 'Finding rent control ordinance pages',
+        status: 'in-progress',
+        progress: 0,
+      },
+      {
+        id: 'extract',
+        label: 'Extracting ordinance text',
+        description: 'Parsing and cleaning content',
+        status: 'pending',
+      },
+      {
+        id: 'save',
+        label: 'Saving to database',
+        description: 'Storing ordinance and metadata',
+        status: 'pending',
+      }
+    ];
+    setProcessSteps(scrapingSteps);
 
     const toastId = toast.scraping.start(municipalityName);
+
+    // Simulate progress updates
+    const progressInterval = setInterval(() => {
+      setProcessSteps(prev => {
+        const updated = [...prev];
+        const currentStep = updated.find(s => s.status === 'in-progress');
+        if (currentStep && currentStep.progress !== undefined) {
+          currentStep.progress = Math.min(currentStep.progress + 20, 90);
+        }
+        return updated;
+      });
+    }, 500);
 
     try {
       const response = await fetch('/api/scrape', {
@@ -57,16 +98,27 @@ function AppContent() {
         throw new Error(data.error || 'Failed to scrape ordinance');
       }
 
+      // Update steps to show completion
+      clearInterval(progressInterval);
+      setProcessSteps(prev => prev.map(step => ({ ...step, status: 'completed', progress: 100 })));
+
       toast.dismiss(toastId);
       toast.scraping.success(municipalityName);
       setResult(data);
     } catch (err) {
+      clearInterval(progressInterval);
+      setProcessSteps(prev => prev.map((step, idx) => ({
+        ...step,
+        status: idx === 0 ? 'error' : step.status,
+      })));
+      
       toast.dismiss(toastId);
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       toast.scraping.error(municipalityName, errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
+      setTimeout(() => setCurrentOperation(null), 2000);
     }
   };
 
