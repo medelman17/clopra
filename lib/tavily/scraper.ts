@@ -119,6 +119,7 @@ export class OrdinanceScraper {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async fetchDetailedContent(_url: string): Promise<string | null> {
     // URL parameter reserved for future implementation
     // This would be implemented with a proper web scraping library
