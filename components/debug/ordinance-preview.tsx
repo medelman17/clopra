@@ -187,7 +187,7 @@ export function OrdinancePreview({
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Low Confidence Result</AlertTitle>
             <AlertDescription>
-              The scraped content doesn't appear to be a rent control ordinance. It might be:
+              The scraped content doesn&apos;t appear to be a rent control ordinance. It might be:
               <ul className="list-disc list-inside mt-2">
                 <li>A search results page</li>
                 <li>A summary or excerpt</li>
@@ -256,7 +256,7 @@ export function OrdinancePreview({
               className="gap-2"
             >
               <XCircle className="h-4 w-4" />
-              This isn't right
+              This isn&apos;t right
             </Button>
             <Button 
               onClick={onAccept}
