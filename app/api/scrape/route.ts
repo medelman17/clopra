@@ -44,8 +44,46 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Scrape ordinance
-    const scrapedOrdinance = await ordinanceScraper.scrapeOrdinance(municipalityName);
+    // Scrape ordinance with intelligent search fallback
+    let scrapedOrdinance = await ordinanceScraper.scrapeOrdinance(municipalityName);
+    
+    // Validate the scraped content
+    let confidence: 'high' | 'medium' | 'low' = 'low';
+    if (scrapedOrdinance) {
+      const { validateOrdinanceContent } = await import('@/lib/agents/ordinance-agent-simple');
+      const validation = await validateOrdinanceContent(scrapedOrdinance.fullText);
+      confidence = validation.confidence;
+      
+      // If confidence is low, try intelligent search
+      if (validation.confidence === 'low') {
+        console.log('[API] Low confidence in scraped content, trying intelligent search');
+        const { intelligentOrdinanceSearch } = await import('@/lib/agents/ordinance-agent-simple');
+        const agentResult = await intelligentOrdinanceSearch(municipalityName, county);
+        
+        if (agentResult.success && agentResult.content) {
+          scrapedOrdinance = {
+            title: agentResult.title || 'Rent Control Ordinance',
+            fullText: agentResult.content,
+            sourceUrl: agentResult.url || '',
+          };
+          confidence = agentResult.confidence || 'medium';
+        }
+      }
+    } else {
+      // No result from basic scraper, try intelligent search
+      console.log('[API] No result from basic scraper, trying intelligent search');
+      const { intelligentOrdinanceSearch } = await import('@/lib/agents/ordinance-agent-simple');
+      const agentResult = await intelligentOrdinanceSearch(municipalityName, county);
+      
+      if (agentResult.success && agentResult.content) {
+        scrapedOrdinance = {
+          title: agentResult.title || 'Rent Control Ordinance',
+          fullText: agentResult.content,
+          sourceUrl: agentResult.url || '',
+        };
+        confidence = agentResult.confidence || 'medium';
+      }
+    }
     
     if (!scrapedOrdinance) {
       return NextResponse.json(
@@ -85,7 +123,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       municipality,
-      ordinance,
+      ordinance: {
+        ...ordinance,
+        confidence,
+      },
       custodian,
     });
     } catch (error) {

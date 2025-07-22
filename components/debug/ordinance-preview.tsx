@@ -31,6 +31,7 @@ interface OrdinancePreviewProps {
     code?: string | null;
     fullText: string;
     sourceUrl?: string | null;
+    confidence?: 'high' | 'medium' | 'low';
   };
   onAccept?: () => void;
   onReject?: () => void;
@@ -93,8 +94,11 @@ export function OrdinancePreview({
   const [activeTab, setActiveTab] = useState('preview');
   const validation = validateOrdinanceContent(ordinance.fullText);
   
+  // Use API confidence if available, otherwise use validation
+  const confidence = ordinance.confidence || validation.confidence;
+  
   const getConfidenceBadge = () => {
-    switch (validation.confidence) {
+    switch (confidence) {
       case 'high':
         return <Badge className="bg-green-100 text-green-800">High Confidence</Badge>;
       case 'medium':
