@@ -1,4 +1,8 @@
 import { tavily } from './client';
+import { 
+  validateMunicipalityMatch,
+  scoreMunicipalityUrl 
+} from '@/lib/search/municipality-validator';
 
 export interface ScrapedOrdinance {
   title: string;
@@ -17,10 +21,10 @@ export interface ScrapedCustodian {
 }
 
 export class OrdinanceScraper {
-  async scrapeOrdinance(municipalityName: string): Promise<ScrapedOrdinance | null> {
+  async scrapeOrdinance(municipalityName: string, county?: string): Promise<ScrapedOrdinance | null> {
     try {
-      // Search for the rent control ordinance
-      const searchResults = await tavily.searchMunicipalOrdinance(municipalityName);
+      // Search for the rent control ordinance with better query
+      const searchResults = await tavily.searchMunicipalOrdinance(municipalityName, county);
       
       if (!searchResults.results.length) {
         return null;
@@ -28,30 +32,43 @@ export class OrdinanceScraper {
 
       // Score results to find the most relevant one
       const scoredResults = searchResults.results.map(result => {
-        let score = 0;
-        const lowerUrl = result.url.toLowerCase();
-        const lowerTitle = result.title.toLowerCase();
+        // First validate this is the correct municipality
+        const municipalityValidation = validateMunicipalityMatch(
+          result.content,
+          municipalityName,
+          county
+        );
+        
+        // If it's not the right municipality, heavily penalize
+        if (!municipalityValidation.isMatch) {
+          console.log(`Skipping result from ${result.url} - wrong municipality: ${municipalityValidation.issues.join(', ')}`);
+          return { result, score: -100 };
+        }
+        
+        // Score the URL
+        let score = scoreMunicipalityUrl(result.url, municipalityName);
+        
+        // Add municipality confidence
+        score += municipalityValidation.confidence;
+        
         const lowerContent = result.content.toLowerCase();
         
-        // URL scoring
-        if (lowerUrl.includes('ecode360.com') || lowerUrl.includes('municode.com')) score += 10;
-        if (lowerUrl.includes('code') || lowerUrl.includes('ordinance')) score += 5;
-        if (lowerUrl.includes('rent')) score += 3;
+        // Content scoring - check for rent control specific content
+        if (lowerContent.includes('rent control')) score += 30;
+        if (lowerContent.includes('rent stabilization')) score += 25;
+        if (lowerContent.includes('rental dwelling')) score += 20;
         
-        // Title scoring
-        if (lowerTitle.includes('rent control')) score += 10;
-        if (lowerTitle.includes('chapter') || lowerTitle.includes('article')) score += 5;
-        if (lowerTitle.includes('ordinance')) score += 3;
-        
-        // Content scoring - check for legal document structure
-        if (lowerContent.includes('section') && lowerContent.includes('shall')) score += 5;
-        if (lowerContent.match(/§\s*\d+/)) score += 5;
-        if (lowerContent.includes('definitions')) score += 3;
+        // Legal document structure
+        if (lowerContent.match(/§\s*\d+/)) score += 15;
+        if (lowerContent.includes('section') && lowerContent.includes('shall')) score += 15;
+        if (lowerContent.includes('definitions')) score += 10;
         
         // Penalize bad content
-        if (lowerContent.includes('search results')) score -= 10;
-        if (lowerContent.includes('no results found')) score -= 10;
-        if (lowerContent.length < 500) score -= 5;
+        if (lowerContent.includes('search results')) score -= 50;
+        if (lowerContent.includes('no results found')) score -= 50;
+        if (lowerContent.length < 500) score -= 20;
+        
+        console.log(`Scored ${result.url}: ${score} (Municipality match: ${municipalityValidation.confidence})`);
         
         return { result, score };
       });

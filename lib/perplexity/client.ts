@@ -57,7 +57,7 @@ export class PerplexityClient {
     const messages: PerplexityMessage[] = [
       {
         role: 'system',
-        content: 'You are a helpful assistant that searches for and provides information about municipal ordinances. Always cite your sources and provide specific URLs when possible.',
+        content: 'You are a municipal ordinance research assistant specializing in New Jersey municipalities. When searching for ordinances, you MUST verify the municipality is in New Jersey and not in any other state. Always cite your sources with specific URLs from official sources like ecode360.com, municode.com, or official .gov websites. Never return results from municipalities in other states.',
       },
       {
         role: 'user',
@@ -94,12 +94,10 @@ export class PerplexityClient {
     citations: PerplexityCitation[];
     query: string;
   }> {
-    const baseQuery = `${municipalityName} ${county ? `${county} County` : ''} New Jersey rent control ordinance`;
-    
     const queries = [
-      `Find the rent control ordinance for ${baseQuery}. Include the full text or a link to the document.`,
-      `What are the rent control laws and ordinances in ${municipalityName}, New Jersey? Provide specific ordinance numbers and text.`,
-      `${baseQuery} municipal code chapter section`,
+      `Find the rent control ordinance for ${municipalityName} in ${county ? `${county} County,` : ''} New Jersey. Only return results from New Jersey municipalities. Do not include results from other states. Include the full text or a link to the official municipal code.`,
+      `What are the rent control laws in the ${county ? 'Township' : 'municipality'} of ${municipalityName}, ${county ? `${county} County,` : ''} New Jersey? Provide the specific ordinance text from ecode360.com or the official municipal website.`,
+      `site:ecode360.com OR site:municode.com "${municipalityName}" "${county ? `${county} County` : ''}" "New Jersey" rent control ordinance`,
     ];
 
     // Try the first query with detailed request

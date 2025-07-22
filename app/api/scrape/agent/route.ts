@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Use regular scraper with validation
-      const scraped = await ordinanceScraper.scrapeOrdinance(municipalityName);
+      const scraped = await ordinanceScraper.scrapeOrdinance(municipalityName, county);
       
       if (!scraped) {
         return NextResponse.json(

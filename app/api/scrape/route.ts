@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Scrape ordinance with intelligent search fallback
-    let scrapedOrdinance = await ordinanceScraper.scrapeOrdinance(municipalityName);
+    let scrapedOrdinance = await ordinanceScraper.scrapeOrdinance(municipalityName, county);
     
     // Validate the scraped content
     let confidence: 'high' | 'medium' | 'low' = 'low';
