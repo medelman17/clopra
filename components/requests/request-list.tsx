@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-type RequestStatus = 'DRAFT' | 'READY' | 'SUBMITTED' | 'ACKNOWLEDGED' | 'FULFILLED' | 'DENIED' | 'APPEALED';
+import { getStatusBadge } from '@/lib/utils/request-status';
+import type { RequestStatus } from '@/types/api';
+import Link from 'next/link';
 
 interface Municipality {
   id: string;
@@ -37,25 +38,6 @@ interface RequestListProps {
   municipalities: { id: string; name: string }[];
 }
 
-function getStatusBadge(status: RequestStatus) {
-  const variants: Record<RequestStatus, { variant: "secondary" | "default" | "outline" | "destructive"; label: string; className?: string }> = {
-    DRAFT: { variant: 'secondary', label: 'Draft' },
-    READY: { variant: 'default', label: 'Ready' },
-    SUBMITTED: { variant: 'default', label: 'Sent' },
-    ACKNOWLEDGED: { variant: 'outline', label: 'Acknowledged', className: 'border-blue-600 text-blue-700' },
-    FULFILLED: { variant: 'outline', label: 'Fulfilled', className: 'border-green-600 text-green-700' },
-    DENIED: { variant: 'destructive', label: 'Denied' },
-    APPEALED: { variant: 'outline', label: 'Appealed', className: 'border-orange-600 text-orange-700' },
-  };
-
-  const config = variants[status] || variants.DRAFT;
-  
-  return (
-    <Badge variant={config.variant} className={config.className}>
-      {config.label}
-    </Badge>
-  );
-}
 
 export function RequestList({ initialRequests, municipalities }: RequestListProps) {
   const requests = initialRequests;
@@ -166,8 +148,9 @@ export function RequestList({ initialRequests, municipalities }: RequestListProp
       {/* Request list */}
       <div className="grid gap-4">
         {sortedRequests.map((request) => (
-          <Card key={request.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
+          <Link key={request.id} href={`/requests/${request.id}`} className="block">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <CardTitle className="text-xl">
@@ -227,7 +210,8 @@ export function RequestList({ initialRequests, municipalities }: RequestListProp
                 )}
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </Link>
         ))}
       </div>
 
