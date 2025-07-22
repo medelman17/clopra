@@ -15,7 +15,7 @@ This is a Next.js application for generating comprehensive OPRA (Open Public Rec
 - **ORM**: Prisma
 - **Storage**: Vercel Blob (for PDFs)
 - **Cache**: Upstash Redis
-- **AI**: Vercel AI SDK 5.0 (beta)
+- **AI**: Vercel AI SDK 4.3+ (supports multiple providers)
 - **Vector Search**: Neon pgvector or Upstash Vector
 - **Hosting**: Vercel
 
@@ -91,12 +91,20 @@ Required in `.env.local`:
 DATABASE_URL=
 DATABASE_URL_UNPOOLED=
 TAVILY_API_KEY=
+BLOB_READ_WRITE_TOKEN=
+
+# AI Configuration
+AI_PROVIDER=anthropic|openai
+AI_CHAT_MODEL=claude-3-5-sonnet-20241022|gpt-4-turbo
+AI_EMBEDDING_MODEL=text-embedding-3-small
+
+# AI API Keys (at least one required)
+ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
+
+# Optional
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
-UPSTASH_VECTOR_REST_URL=
-UPSTASH_VECTOR_REST_TOKEN=
-BLOB_READ_WRITE_TOKEN=
 ```
 
 ## Development Workflow

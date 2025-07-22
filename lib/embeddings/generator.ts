@@ -1,9 +1,9 @@
-import { openai } from '@ai-sdk/openai';
 import { embedMany, embed } from 'ai';
 import { TextChunk } from './chunker';
+import { getEmbeddingModel } from '@/lib/ai/config';
 
 export class EmbeddingGenerator {
-  private model = openai.embedding('text-embedding-3-small');
+  private model = getEmbeddingModel();
 
   /**
    * Generate embeddings for multiple text chunks

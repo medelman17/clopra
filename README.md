@@ -14,7 +14,7 @@ A Next.js application that automatically generates comprehensive OPRA (Open Publ
 
 - **Framework**: Next.js 15 with App Router
 - **Database**: Neon PostgreSQL with pgvector
-- **AI**: Vercel AI SDK with OpenAI
+- **AI**: Vercel AI SDK (supports OpenAI, Anthropic Claude, and more)
 - **Search**: Tavily API for web scraping
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **Deployment**: Vercel
@@ -32,6 +32,13 @@ A Next.js application that automatically generates comprehensive OPRA (Open Publ
    DATABASE_URL=your-neon-db-url
    DATABASE_URL_UNPOOLED=your-neon-db-unpooled-url
    TAVILY_API_KEY=your-tavily-api-key
+   
+   # AI Configuration (choose your provider)
+   AI_PROVIDER=anthropic  # or 'openai'
+   AI_CHAT_MODEL=claude-3-5-sonnet-20241022  # or 'gpt-4-turbo'
+   
+   # Provide API key for your chosen provider
+   ANTHROPIC_API_KEY=your-anthropic-api-key
    OPENAI_API_KEY=your-openai-api-key
    ```
 

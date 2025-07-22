@@ -1,6 +1,6 @@
 import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
+import { getChatModel } from '@/lib/ai/config';
 import { OPRA_CATEGORIES, OpraCategory } from '@/types/opra';
 import { vectorStore, VectorSearchResult } from '@/lib/embeddings/vector-store';
 
@@ -19,7 +19,7 @@ const SectionAnalysisSchema = z.object({
 type SectionAnalysis = z.infer<typeof SectionAnalysisSchema>;
 
 export class OrdinanceAnalyzer {
-  private model = openai('gpt-4-turbo');
+  private model = getChatModel();
 
   /**
    * Analyze an ordinance and determine relevant OPRA categories
