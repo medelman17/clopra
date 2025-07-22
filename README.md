@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NJ OPRA Request Generator
 
-## Getting Started
+A Next.js application that automatically generates comprehensive OPRA (Open Public Records Act) requests for New Jersey municipalities' rent control ordinances.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- 🔍 **Automatic Ordinance Discovery**: Uses Tavily API to search and extract rent control ordinances from municipal websites
+- 📄 **Intelligent Text Processing**: Chunks ordinances into sections and generates embeddings for semantic search
+- 🤖 **AI-Powered Analysis**: Analyzes ordinance content to determine relevant OPRA record categories
+- 📋 **Customized Requests**: Generates tailored OPRA requests based on specific ordinance provisions
+- 📧 **Custodian Information**: Automatically finds and includes municipal clerk contact details
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework**: Next.js 15 with App Router
+- **Database**: Neon PostgreSQL with pgvector
+- **AI**: Vercel AI SDK with OpenAI
+- **Search**: Tavily API for web scraping
+- **Styling**: Tailwind CSS v4 + shadcn/ui
+- **Deployment**: Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
 
-## Learn More
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. Set up environment variables in `.env.local`:
+   ```
+   DATABASE_URL=your-neon-db-url
+   DATABASE_URL_UNPOOLED=your-neon-db-unpooled-url
+   TAVILY_API_KEY=your-tavily-api-key
+   OPENAI_API_KEY=your-openai-api-key
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Set up the database:
+   ```bash
+   pnpm prisma generate
+   pnpm prisma migrate dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Run the development server:
+   ```bash
+   pnpm dev
+   ```
+
+6. Open [http://localhost:3000](http://localhost:3000)
+
+## Usage
+
+1. Enter a New Jersey municipality name (e.g., "Atlantic Highlands")
+2. Click "Search for Ordinance" to scrape the rent control ordinance
+3. Once found, click "Process Ordinance" to chunk and embed the text
+4. The system will analyze the ordinance and generate a customized OPRA request
+
+## API Endpoints
+
+- `POST /api/scrape` - Scrape a municipality's rent control ordinance
+- `POST /api/ordinances/[id]/process` - Process an ordinance (chunk and embed)
+- `POST /api/ordinances/[id]/analyze` - Analyze an ordinance for OPRA categories
+- `POST /api/opra-requests/generate` - Generate an OPRA request
+
+## Development
+
+See `CLAUDE.md` for detailed development guidelines and architecture information.
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-repo%2Fopra-requests)

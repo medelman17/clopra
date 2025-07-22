@@ -1,0 +1,132 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+model Municipality {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  county      String
+  state       String   @default("NJ")
+  websiteUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ordinances  Ordinance[]
+  custodians  Custodian[]
+  opraRequests OpraRequest[]
+
+  @@index([name])
+  @@index([county])
+}
+
+model Ordinance {
+  id              String   @id @default(cuid())
+  municipalityId  String
+  title           String
+  code            String?  // e.g., "§ 277"
+  fullText        String   @db.Text
+  effectiveDate   DateTime?
+  lastUpdated     DateTime?
+  sourceUrl       String?
+  pdfUrl          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  municipality    Municipality @relation(fields: [municipalityId], references: [id])
+  chunks          OrdinanceChunk[]
+  opraRequests    OpraRequest[]
+
+  @@index([municipalityId])
+  @@index([code])
+}
+
+model OrdinanceChunk {
+  id              String   @id @default(cuid())
+  ordinanceId     String
+  sectionNumber   String?  // e.g., "277-1"
+  sectionTitle    String?
+  content         String   @db.Text
+  embedding       Unsupported("vector(1536)")?
+  chunkIndex      Int
+  startChar       Int
+  endChar         Int
+  createdAt       DateTime @default(now())
+
+  ordinance       Ordinance @relation(fields: [ordinanceId], references: [id], onDelete: Cascade)
+
+  @@index([ordinanceId])
+  @@index([sectionNumber])
+}
+
+model Custodian {
+  id              String   @id @default(cuid())
+  municipalityId  String
+  name            String
+  title           String
+  email           String?
+  phone           String?
+  address         String?
+  officeHours     String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  municipality    Municipality @relation(fields: [municipalityId], references: [id])
+  opraRequests    OpraRequest[]
+
+  @@index([municipalityId])
+}
+
+model OpraRequest {
+  id              String   @id @default(cuid())
+  municipalityId  String
+  ordinanceId     String
+  custodianId     String?
+  requestNumber   String   @unique @default(cuid())
+  status          RequestStatus @default(DRAFT)
+  
+  // Request details
+  categories      Json     // Array of requested categories
+  customizations  Json?    // Ordinance-specific customizations
+  requestText     String   @db.Text
+  
+  // PDF and submission info
+  pdfUrl          String?
+  submittedAt     DateTime?
+  responseDeadline DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  municipality    Municipality @relation(fields: [municipalityId], references: [id])
+  ordinance       Ordinance @relation(fields: [ordinanceId], references: [id])
+  custodian       Custodian? @relation(fields: [custodianId], references: [id])
+
+  @@index([municipalityId])
+  @@index([ordinanceId])
+  @@index([status])
+  @@index([requestNumber])
+}
+
+enum RequestStatus {
+  DRAFT
+  READY
+  SUBMITTED
+  ACKNOWLEDGED
+  FULFILLED
+  DENIED
+  APPEALED
+}
