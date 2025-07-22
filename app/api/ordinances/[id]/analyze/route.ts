@@ -4,10 +4,10 @@ import { ordinanceAnalyzer } from '@/lib/opra/analyzer';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: ordinanceId } = await params;
   try {
-    const ordinanceId = params.id;
     
     // Check if ordinance exists and has been processed
     const ordinance = await prisma.ordinance.findUnique({

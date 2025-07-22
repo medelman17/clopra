@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
+import type { ScrapeResult } from '@/types/api';
 
 export default function Home() {
   const [municipalityName, setMunicipalityName] = useState('Atlantic Highlands');
   const [county, setCounty] = useState('Monmouth');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ScrapeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleScrape = async () => {
@@ -146,7 +147,7 @@ export default function Home() {
                     <dt className="font-medium">Source:</dt>
                     <dd>
                       <a 
-                        href={result.ordinance.sourceUrl} 
+                        href={result.ordinance.sourceUrl || '#'} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline"
@@ -163,7 +164,7 @@ export default function Home() {
                   </div>
                 </dl>
                 <Button 
-                  onClick={() => handleProcess(result.ordinance.id)}
+                  onClick={() => handleProcess(result.ordinance!.id)}
                   className="mt-4"
                   variant="secondary"
                 >

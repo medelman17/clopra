@@ -1,5 +1,4 @@
 import { tavily } from './client';
-import { prisma } from '@/lib/db/prisma';
 
 export interface ScrapedOrdinance {
   title: string;
@@ -120,7 +119,8 @@ export class OrdinanceScraper {
     };
   }
 
-  private async fetchDetailedContent(url: string): Promise<string | null> {
+  private async fetchDetailedContent(_url: string): Promise<string | null> {
+    // URL parameter reserved for future implementation
     // This would be implemented with a proper web scraping library
     // For now, we'll rely on Tavily's content
     return null;

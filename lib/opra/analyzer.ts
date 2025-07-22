@@ -26,7 +26,15 @@ export class OrdinanceAnalyzer {
    */
   async analyzeOrdinance(ordinanceId: string): Promise<{
     relevantCategories: string[];
-    analysis: Record<string, any>;
+    analysis: {
+      totalSections: number;
+      hasRentControlBoard: boolean;
+      hasComplaintProcess: boolean;
+      hasEnforcementMechanism: boolean;
+      keyProvisions: string[];
+      sectionAnalyses: Record<string, SectionAnalysis>;
+      totalRelevantCategories: number;
+    };
   }> {
     try {
       // Get all chunks for the ordinance
@@ -39,12 +47,12 @@ export class OrdinanceAnalyzer {
       // Analyze each significant section
       const sectionAnalyses: Map<string, SectionAnalysis> = new Map();
       const relevantCategoryIds = new Set<string>();
-      const overallAnalysis: Record<string, any> = {
+      const overallAnalysis = {
         totalSections: chunks.length,
         hasRentControlBoard: false,
         hasComplaintProcess: false,
         hasEnforcementMechanism: false,
-        keyProvisions: [],
+        keyProvisions: [] as string[],
       };
 
       // Analyze chunks in batches
@@ -63,7 +71,9 @@ export class OrdinanceAnalyzer {
           overallAnalysis.hasRentControlBoard ||= analysis.hasRentControlBoard;
           overallAnalysis.hasComplaintProcess ||= analysis.hasComplaintProcess;
           overallAnalysis.hasEnforcementMechanism ||= analysis.hasEnforcementMechanism;
-          overallAnalysis.keyProvisions.push(...analysis.keyProvisions);
+          if (analysis.keyProvisions.length > 0) {
+            overallAnalysis.keyProvisions.push(...analysis.keyProvisions);
+          }
         }
       }
 

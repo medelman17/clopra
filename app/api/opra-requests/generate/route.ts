@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     let recordsSummary: Record<string, string[]> = {};
 
     if (!categoriesToUse || includeAllCategories) {
-      const { relevantCategories, analysis } = await ordinanceAnalyzer.analyzeOrdinance(ordinanceId);
+      const { relevantCategories } = await ordinanceAnalyzer.analyzeOrdinance(ordinanceId);
       categoriesToUse = relevantCategories;
       recordsSummary = await ordinanceAnalyzer.generateRecordsSummary(ordinanceId, relevantCategories);
     } else {

@@ -7,7 +7,7 @@ export interface OpraRequestData {
   custodian?: Custodian | null;
   selectedCategories: string[];
   recordsSummary: Record<string, string[]>;
-  customizations?: Record<string, any>;
+  customizations?: Record<string, string | string[]>;
 }
 
 export class OpraRequestGenerator {

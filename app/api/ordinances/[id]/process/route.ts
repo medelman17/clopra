@@ -4,10 +4,10 @@ import { vectorStore } from '@/lib/embeddings/vector-store';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: ordinanceId } = await params;
   try {
-    const ordinanceId = params.id;
     
     // Get the ordinance
     const ordinance = await prisma.ordinance.findUnique({
