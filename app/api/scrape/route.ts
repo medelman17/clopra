@@ -8,6 +8,7 @@ import { trackOrdinanceError } from '@/lib/sentry/tracking';
 const ScrapeRequestSchema = z.object({
   municipalityName: z.string(),
   county: z.string().optional(),
+  municipalityId: z.string().optional(), // Municipality ID for validation
 });
 
 export async function POST(request: NextRequest) {
@@ -19,19 +20,51 @@ export async function POST(request: NextRequest) {
       const parsed = ScrapeRequestSchema.parse(body);
       municipalityName = parsed.municipalityName;
       const county = parsed.county;
+      const municipalityId = parsed.municipalityId;
       
       // Add breadcrumb for tracking
       Sentry.addBreadcrumb({
         category: 'api',
         message: 'Scraping ordinance',
         level: 'info',
-        data: { municipalityName, county },
+        data: { municipalityName, county, municipalityId },
       });
 
     // Check if municipality already exists
-    let municipality = await prisma.municipality.findUnique({
-      where: { name: municipalityName },
-    });
+    let municipality;
+    
+    if (municipalityId) {
+      // Fetch by ID and validate it matches the name/county
+      municipality = await prisma.municipality.findUnique({
+        where: { id: municipalityId },
+      });
+      
+      if (!municipality) {
+        return NextResponse.json(
+          { error: 'Municipality not found' },
+          { status: 404 }
+        );
+      }
+      
+      // Validate the municipality matches what was requested
+      if (municipality.name !== municipalityName) {
+        console.warn(`Municipality name mismatch: DB has '${municipality.name}', request has '${municipalityName}'`);
+        // Use the database values as the source of truth
+        municipalityName = municipality.name;
+      }
+      
+      if (county && municipality.county !== county) {
+        console.warn(`County mismatch: DB has '${municipality.county}', request has '${county}'`);
+      }
+    } else {
+      // Fallback to name-based lookup
+      municipality = await prisma.municipality.findFirst({
+        where: { 
+          name: municipalityName,
+          ...(county ? { county } : {}),
+        },
+      });
+    }
 
     if (!municipality) {
       // Create municipality
@@ -45,7 +78,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Scrape ordinance with intelligent search fallback
-    let scrapedOrdinance = await ordinanceScraper.scrapeOrdinance(municipalityName, county);
+    // Use the municipality's county from the database as the source of truth
+    const searchCounty = municipality.county !== 'Unknown' ? municipality.county : county;
+    let scrapedOrdinance = await ordinanceScraper.scrapeOrdinance(municipality.name, searchCounty);
     
     // Validate the scraped content
     let confidence: 'high' | 'medium' | 'low' = 'low';
@@ -58,7 +93,7 @@ export async function POST(request: NextRequest) {
       if (validation.confidence === 'low') {
         console.log('[API] Low confidence in scraped content, trying Perplexity search');
         const { perplexityOrdinanceSearch } = await import('@/lib/agents/perplexity-ordinance-agent');
-        const perplexityResult = await perplexityOrdinanceSearch(municipalityName, county);
+        const perplexityResult = await perplexityOrdinanceSearch(municipality.name, searchCounty);
         
         if (perplexityResult.success && perplexityResult.content) {
           scrapedOrdinance = {
@@ -70,7 +105,7 @@ export async function POST(request: NextRequest) {
         } else {
           console.log('[API] Perplexity search failed, falling back to intelligent search');
           const { intelligentOrdinanceSearch } = await import('@/lib/agents/ordinance-agent-simple');
-          const agentResult = await intelligentOrdinanceSearch(municipalityName, county);
+          const agentResult = await intelligentOrdinanceSearch(municipality.name, searchCounty);
           
           if (agentResult.success && agentResult.content) {
             scrapedOrdinance = {
@@ -131,7 +166,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Scrape custodian info
-    const scrapedCustodian = await ordinanceScraper.scrapeCustodian(municipalityName);
+    const scrapedCustodian = await ordinanceScraper.scrapeCustodian(municipality.name);
     
     let custodian = null;
     if (scrapedCustodian) {

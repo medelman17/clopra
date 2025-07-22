@@ -61,19 +61,24 @@ export class TavilyClient {
     return TavilyResponseSchema.parse(data);
   }
 
-  async searchMunicipalOrdinance(municipality: string, topic: string = 'rent control'): Promise<TavilyResponse> {
+  async searchMunicipalOrdinance(municipality: string, county?: string, topic: string = 'rent control'): Promise<TavilyResponse> {
+    // Build more specific queries based on available information
+    const countyStr = county ? `"${county} County"` : '';
+    
     // Try multiple search strategies to find the actual ordinance text
     const queries = [
-      // Direct ordinance search
-      `${municipality} New Jersey "rent control ordinance" full text site:.gov OR site:.nj.us`,
+      // Most specific - with county and site restrictions
+      `"${municipality}" ${countyStr} "New Jersey" "rent control ordinance" full text site:ecode360.com OR site:municode.com`,
+      // Direct ordinance search with county
+      `"${municipality}" ${countyStr} New Jersey "rent control ordinance" full text site:.gov OR site:.nj.us`,
       // Municipal code search
-      `${municipality} NJ municipal code chapter rent control stabilization site:ecode360.com OR site:municode.com`,
+      `"${municipality}" ${countyStr} NJ municipal code chapter rent control stabilization`,
       // Generic search
-      `${municipality} New Jersey ${topic} ordinance regulations text`,
+      `"${municipality}" New Jersey ${topic} ordinance regulations text`,
     ];
     
-    // Try the first query
-    const query = queries[0];
+    // Use the most specific query
+    const query = county ? queries[0] : queries[1];
     
     return this.search(query, {
       searchDepth: 'advanced',

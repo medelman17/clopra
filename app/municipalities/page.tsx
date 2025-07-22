@@ -121,8 +121,8 @@ export default function MunicipalitiesPage() {
     }
   };
 
-  const handleScrape = (municipalityId: string, name: string, countyName: string) => {
-    router.push(`/app?municipality=${encodeURIComponent(name)}&county=${encodeURIComponent(countyName)}`);
+  const handleScrape = (municipalityId: string) => {
+    router.push(`/app?municipalityId=${municipalityId}`);
   };
 
   const handleReset = async (municipalityId: string, name: string) => {
@@ -440,7 +440,7 @@ export default function MunicipalitiesPage() {
                       <>
                         <Button 
                           size="sm"
-                          onClick={() => handleScrape(municipality.id, municipality.name, municipality.county)}
+                          onClick={() => handleScrape(municipality.id)}
                         >
                           <RefreshCw className="h-4 w-4 mr-1" />
                           Re-search
@@ -457,7 +457,7 @@ export default function MunicipalitiesPage() {
                     ) : (
                       <Button 
                         size="sm"
-                        onClick={() => handleScrape(municipality.id, municipality.name, municipality.county)}
+                        onClick={() => handleScrape(municipality.id)}
                       >
                         <Search className="h-4 w-4 mr-1" />
                         Scrape Ordinance
@@ -521,7 +521,7 @@ export default function MunicipalitiesPage() {
                             <Button 
                               size="sm"
                               variant="ghost"
-                              onClick={() => handleScrape(municipality.id, municipality.name, municipality.county)}
+                              onClick={() => handleScrape(municipality.id)}
                               title="Re-search for ordinances"
                             >
                               <RefreshCw className="h-4 w-4" />
@@ -539,7 +539,7 @@ export default function MunicipalitiesPage() {
                           <Button 
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleScrape(municipality.id, municipality.name, municipality.county)}
+                            onClick={() => handleScrape(municipality.id)}
                           >
                             <Search className="h-4 w-4" />
                           </Button>

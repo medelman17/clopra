@@ -2,6 +2,11 @@ import { generateText } from 'ai';
 import { getChatModel } from '@/lib/ai/config';
 import { tavily } from '@/lib/tavily/client';
 import type { TavilySearchResult } from '@/lib/tavily/client';
+import { 
+  buildMunicipalitySearchQueries,
+  validateMunicipalityMatch,
+  scoreMunicipalityUrl 
+} from '@/lib/search/municipality-validator';
 
 interface ValidationResult {
   isValid: boolean;
@@ -55,17 +60,8 @@ export async function intelligentOrdinanceSearch(
   const model = getChatModel();
   
   try {
-    // Try multiple search strategies
-    const searchQueries = [
-      `${municipalityName} rent control ordinance`,
-      `${municipalityName} NJ rent control code`,
-      `${municipalityName} New Jersey rent stabilization ordinance`,
-      `"${municipalityName}" "rent control" filetype:pdf`,
-    ];
-    
-    if (county) {
-      searchQueries.push(`${municipalityName} ${county} County NJ rent control`);
-    }
+    // Use the municipality validator to build better queries
+    const searchQueries = buildMunicipalitySearchQueries(municipalityName, county);
     
     let allResults: TavilySearchResult[] = [];
     
@@ -91,20 +87,30 @@ export async function intelligentOrdinanceSearch(
     
     console.log(`[Agent] Found ${allResults.length} unique results across searches`);
     
-    // Step 2: Score and rank results
+    // Step 2: Score and rank results with municipality validation
     const scoredResults = allResults.map(result => {
-      let score = 0;
-      const lowerUrl = result.url.toLowerCase();
+      // First validate this is the correct municipality
+      const municipalityValidation = validateMunicipalityMatch(
+        result.content,
+        municipalityName,
+        county
+      );
+      
+      // If it's not the right municipality, heavily penalize
+      if (!municipalityValidation.isMatch) {
+        console.log(`[Agent] Skipping result from ${result.url} - wrong municipality: ${municipalityValidation.issues.join(', ')}`);
+        return { result, score: -100 };
+      }
+      
+      // Score the URL
+      let score = scoreMunicipalityUrl(result.url, municipalityName);
+      
+      // Add municipality confidence
+      score += municipalityValidation.confidence;
+      
       const lowerContent = result.content.toLowerCase();
       
-      // Prioritize municipal code sites
-      if (lowerUrl.includes('ecode360.com') || lowerUrl.includes('municode.com')) score += 50;
-      if (lowerUrl.includes('generalcode.com')) score += 40;
-      if (lowerUrl.includes('.gov')) score += 30;
-      if (lowerUrl.includes('code') || lowerUrl.includes('ordinance')) score += 20;
-      if (lowerUrl.includes('pdf')) score += 15;
-      
-      // Check content quality
+      // Content scoring - check for rent control specific content
       if (lowerContent.includes('rent control')) score += 30;
       if (lowerContent.includes('rent stabilization')) score += 25;
       if (lowerContent.includes('rental dwelling')) score += 20;
@@ -119,6 +125,8 @@ export async function intelligentOrdinanceSearch(
       if (lowerContent.includes('page not found')) score -= 50;
       if (lowerContent.includes('404')) score -= 50;
       if (lowerContent.length < 200) score -= 20;
+      
+      console.log(`[Agent] Scored ${result.url}: ${score} (Municipality match: ${municipalityValidation.confidence})`);
       
       return { result, score };
     });

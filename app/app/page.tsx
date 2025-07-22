@@ -16,6 +16,7 @@ function AppContent() {
   const searchParams = useSearchParams();
   const [municipalityName, setMunicipalityName] = useState('');
   const [county, setCounty] = useState('');
+  const [municipalityId, setMunicipalityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScrapeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,18 +29,28 @@ function AppContent() {
   const [currentOperation, setCurrentOperation] = useState<string | null>(null);
 
   useEffect(() => {
-    const municipalityParam = searchParams.get('municipality');
-    const countyParam = searchParams.get('county');
     const municipalityIdParam = searchParams.get('municipalityId');
     
-    if (municipalityParam) setMunicipalityName(municipalityParam);
-    if (countyParam) setCounty(countyParam);
-    
-    // If we have a municipality ID, we could fetch its details
     if (municipalityIdParam) {
-      // TODO: Fetch municipality details by ID
+      setMunicipalityId(municipalityIdParam);
+      // Fetch municipality details by ID
+      fetchMunicipalityDetails(municipalityIdParam);
     }
   }, [searchParams]);
+
+  const fetchMunicipalityDetails = async (id: string) => {
+    try {
+      const response = await fetch(`/api/municipalities/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch municipality');
+      
+      const data = await response.json();
+      setMunicipalityName(data.name);
+      setCounty(data.county);
+    } catch (err) {
+      console.error('Error fetching municipality:', err);
+      toast.error('Failed to load municipality details');
+    }
+  };
 
   const handleScrape = async () => {
     setLoading(true);
@@ -90,7 +101,11 @@ function AppContent() {
       const response = await fetch('/api/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ municipalityName, county }),
+        body: JSON.stringify({ 
+          municipalityName, 
+          county,
+          municipalityId // Include the ID for validation
+        }),
       });
 
       const data = await response.json();
