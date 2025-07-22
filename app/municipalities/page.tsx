@@ -23,6 +23,7 @@ import {
   FileDown,
   BarChart3
 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface MunicipalityWithStatus {
   id: string;
@@ -143,6 +144,8 @@ export default function MunicipalitiesPage() {
     a.href = url;
     a.download = 'nj-municipalities.csv';
     a.click();
+    
+    toast.file.exported('nj-municipalities.csv');
   };
 
   return (

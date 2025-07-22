@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, Download } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import type { ScrapeResult } from '@/types/api';
 
 function AppContent() {
@@ -41,6 +42,8 @@ function AppContent() {
     setError(null);
     setResult(null);
 
+    const toastId = toast.scraping.start(municipalityName);
+
     try {
       const response = await fetch('/api/scrape', {
         method: 'POST',
@@ -54,9 +57,14 @@ function AppContent() {
         throw new Error(data.error || 'Failed to scrape ordinance');
       }
 
+      toast.dismiss(toastId);
+      toast.scraping.success(municipalityName);
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      toast.dismiss(toastId);
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      toast.scraping.error(municipalityName, errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -64,6 +72,8 @@ function AppContent() {
 
   const generateOpraRequest = async (ordinanceId: string) => {
     setLoading(true);
+    toast.opra.analyzing();
+    
     try {
       // First analyze the ordinance
       const analyzeResponse = await fetch(`/api/ordinances/${ordinanceId}/analyze`, {
@@ -75,6 +85,9 @@ function AppContent() {
       }
 
       // Then generate the OPRA request with PDF
+      toast.dismiss();
+      toast.opra.generating();
+      
       const response = await fetch('/api/opra-requests/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,9 +108,13 @@ function AppContent() {
         requestText: data.requestText,
       });
 
-      alert('OPRA request generated successfully!');
+      toast.dismiss();
+      toast.opra.success();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      toast.dismiss();
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      toast.opra.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -105,6 +122,8 @@ function AppContent() {
 
   const handleProcess = async (ordinanceId: string) => {
     setLoading(true);
+    const toastId = toast.processing.start();
+    
     try {
       const response = await fetch(`/api/ordinances/${ordinanceId}/process`, {
         method: 'POST',
@@ -115,12 +134,16 @@ function AppContent() {
         throw new Error(data.error || 'Failed to process ordinance');
       }
 
-      alert(`Ordinance processed! Created ${data.chunksCreated} chunks.`);
+      toast.dismiss(toastId);
+      toast.processing.success(data.chunksCreated);
       
       // Auto-generate OPRA request after processing
       await generateOpraRequest(ordinanceId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      toast.dismiss(toastId);
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      toast.processing.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -268,7 +291,7 @@ function AppContent() {
           )}
 
           {opraRequest && (
-            <Card>
+            <Card data-opra-result>
               <CardHeader>
                 <CardTitle>Generated OPRA Request</CardTitle>
                 <CardDescription>
@@ -289,7 +312,7 @@ function AppContent() {
                       variant="outline"
                       onClick={() => {
                         navigator.clipboard.writeText(opraRequest.requestText);
-                        alert('Request text copied to clipboard!');
+                        toast.file.copied();
                       }}
                       className="flex items-center gap-2"
                     >

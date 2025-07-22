@@ -1,0 +1,6 @@
+[auth]
+token=
+
+[defaults]
+org=fortai-legal
+project=clopra

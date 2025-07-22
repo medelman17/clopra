@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import * as Sentry from '@sentry/nextjs';
 import { ordinanceScraper } from '@/lib/tavily/scraper';
 import { prisma } from '@/lib/db/prisma';
+import { trackOrdinanceError } from '@/lib/sentry/tracking';
 
 const ScrapeRequestSchema = z.object({
   municipalityName: z.string(),
@@ -9,9 +11,22 @@ const ScrapeRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { municipalityName, county } = ScrapeRequestSchema.parse(body);
+  return Sentry.withMonitor('scrape-ordinance', async () => {
+    let municipalityName = '';
+    
+    try {
+      const body = await request.json();
+      const parsed = ScrapeRequestSchema.parse(body);
+      municipalityName = parsed.municipalityName;
+      const county = parsed.county;
+      
+      // Add breadcrumb for tracking
+      Sentry.addBreadcrumb({
+        category: 'api',
+        message: 'Scraping ordinance',
+        level: 'info',
+        data: { municipalityName, county },
+      });
 
     // Check if municipality already exists
     let municipality = await prisma.municipality.findUnique({
@@ -73,19 +88,29 @@ export async function POST(request: NextRequest) {
       ordinance,
       custodian,
     });
-  } catch (error) {
-    console.error('Scraping error:', error);
-    
-    if (error instanceof z.ZodError) {
+    } catch (error) {
+      console.error('Scraping error:', error);
+      
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          { error: 'Invalid request', details: error.errors },
+          { status: 400 }
+        );
+      }
+
+      // Track non-validation errors
+      if (error instanceof Error) {
+        trackOrdinanceError(
+          municipalityName || 'unknown',
+          'scrape',
+          error
+        );
+      }
+
       return NextResponse.json(
-        { error: 'Invalid request', details: error.errors },
-        { status: 400 }
+        { error: 'Internal server error' },
+        { status: 500 }
       );
     }
-
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  });
 }
