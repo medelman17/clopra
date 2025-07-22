@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, Download } from 'lucide-react';
 import type { ScrapeResult } from '@/types/api';
 
-export default function Home() {
+function AppContent() {
   const searchParams = useSearchParams();
   const [municipalityName, setMunicipalityName] = useState('');
   const [county, setCounty] = useState('');
@@ -311,5 +311,19 @@ export default function Home() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </div>
+    }>
+      <AppContent />
+    </Suspense>
   );
 }
