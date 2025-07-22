@@ -62,7 +62,18 @@ export class TavilyClient {
   }
 
   async searchMunicipalOrdinance(municipality: string, topic: string = 'rent control'): Promise<TavilyResponse> {
-    const query = `${municipality} New Jersey municipal code ${topic} ordinance site:.gov OR site:.nj.us`;
+    // Try multiple search strategies to find the actual ordinance text
+    const queries = [
+      // Direct ordinance search
+      `${municipality} New Jersey "rent control ordinance" full text site:.gov OR site:.nj.us`,
+      // Municipal code search
+      `${municipality} NJ municipal code chapter rent control stabilization site:ecode360.com OR site:municode.com`,
+      // Generic search
+      `${municipality} New Jersey ${topic} ordinance regulations text`,
+    ];
+    
+    // Try the first query
+    const query = queries[0];
     
     return this.search(query, {
       searchDepth: 'advanced',

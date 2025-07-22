@@ -26,10 +26,41 @@ export class OrdinanceScraper {
         return null;
       }
 
-      // Find the most relevant result (usually municipal code or ordinance page)
-      const ordinanceResult = searchResults.results.find(
-        r => r.url.includes('code') || r.url.includes('ordinance') || r.title.toLowerCase().includes('rent')
-      ) || searchResults.results[0];
+      // Score results to find the most relevant one
+      const scoredResults = searchResults.results.map(result => {
+        let score = 0;
+        const lowerUrl = result.url.toLowerCase();
+        const lowerTitle = result.title.toLowerCase();
+        const lowerContent = result.content.toLowerCase();
+        
+        // URL scoring
+        if (lowerUrl.includes('ecode360.com') || lowerUrl.includes('municode.com')) score += 10;
+        if (lowerUrl.includes('code') || lowerUrl.includes('ordinance')) score += 5;
+        if (lowerUrl.includes('rent')) score += 3;
+        
+        // Title scoring
+        if (lowerTitle.includes('rent control')) score += 10;
+        if (lowerTitle.includes('chapter') || lowerTitle.includes('article')) score += 5;
+        if (lowerTitle.includes('ordinance')) score += 3;
+        
+        // Content scoring - check for legal document structure
+        if (lowerContent.includes('section') && lowerContent.includes('shall')) score += 5;
+        if (lowerContent.match(/§\s*\d+/)) score += 5;
+        if (lowerContent.includes('definitions')) score += 3;
+        
+        // Penalize bad content
+        if (lowerContent.includes('search results')) score -= 10;
+        if (lowerContent.includes('no results found')) score -= 10;
+        if (lowerContent.length < 500) score -= 5;
+        
+        return { result, score };
+      });
+      
+      // Sort by score and pick the best one
+      scoredResults.sort((a, b) => b.score - a.score);
+      const ordinanceResult = scoredResults[0].result;
+      
+      console.log('Scraper: Selected result with score', scoredResults[0].score, 'from URL:', ordinanceResult.url);
 
       // Extract ordinance details from the content
       const ordinance: ScrapedOrdinance = {

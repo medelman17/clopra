@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { MultiStepProgress, type ProcessStep } from '@/components/ui/progress-indicator';
+import { OrdinancePreview } from '@/components/debug/ordinance-preview';
 import type { ScrapeResult } from '@/types/api';
 
 function AppContent() {
@@ -417,59 +418,15 @@ function AppContent() {
           </Card>
 
           {result.ordinance && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Ordinance Found</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="space-y-2">
-                  <div>
-                    <dt className="font-medium">Title:</dt>
-                    <dd>{result.ordinance.title}</dd>
-                  </div>
-                  {result.ordinance.code && (
-                    <div>
-                      <dt className="font-medium">Code:</dt>
-                      <dd>{result.ordinance.code}</dd>
-                    </div>
-                  )}
-                  <div>
-                    <dt className="font-medium">Source:</dt>
-                    <dd>
-                      <a 
-                        href={result.ordinance.sourceUrl || '#'} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {result.ordinance.sourceUrl}
-                      </a>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium">Content Preview:</dt>
-                    <dd className="mt-2 p-4 bg-gray-50 rounded text-sm">
-                      {result.ordinance.fullText.substring(0, 500)}...
-                    </dd>
-                  </div>
-                </dl>
-                <Button 
-                  onClick={() => handleProcess(result.ordinance!.id)}
-                  className="mt-4"
-                  variant="secondary"
-                  disabled={loading}
-                >
-                  {loading && currentOperation === 'processing' ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    'Process Ordinance (Chunk & Embed)'
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+            <OrdinancePreview 
+              ordinance={result.ordinance}
+              onAccept={() => handleProcess(result.ordinance!.id)}
+              onReject={() => {
+                setResult(null);
+                setError('Please try searching with more specific terms or check the municipality website directly.');
+              }}
+              showActions={!loading && !opraRequest}
+            />
           )}
 
           {result.custodian && (
