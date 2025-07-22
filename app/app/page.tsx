@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,8 +10,9 @@ import { Loader2, FileText, Download } from 'lucide-react';
 import type { ScrapeResult } from '@/types/api';
 
 export default function Home() {
-  const [municipalityName, setMunicipalityName] = useState('Atlantic Highlands');
-  const [county, setCounty] = useState('Monmouth');
+  const searchParams = useSearchParams();
+  const [municipalityName, setMunicipalityName] = useState('');
+  const [county, setCounty] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScrapeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,6 +21,20 @@ export default function Home() {
     pdfUrl: string;
     requestText: string;
   } | null>(null);
+
+  useEffect(() => {
+    const municipalityParam = searchParams.get('municipality');
+    const countyParam = searchParams.get('county');
+    const municipalityIdParam = searchParams.get('municipalityId');
+    
+    if (municipalityParam) setMunicipalityName(municipalityParam);
+    if (countyParam) setCounty(countyParam);
+    
+    // If we have a municipality ID, we could fetch its details
+    if (municipalityIdParam) {
+      // TODO: Fetch municipality details by ID
+    }
+  }, [searchParams]);
 
   const handleScrape = async () => {
     setLoading(true);
