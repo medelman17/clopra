@@ -14,7 +14,7 @@ async function getOrdinance(id: string) {
     include: {
       municipality: true,
       chunks: {
-        orderBy: { position: 'asc' },
+        orderBy: { chunkIndex: 'asc' },
         take: 10, // Get first 10 chunks for section preview
       },
       opraRequests: {

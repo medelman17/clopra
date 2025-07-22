@@ -7,16 +7,42 @@ const AgentScrapeSchema = z.object({
   municipalityName: z.string(),
   county: z.string().optional(),
   useFullAgent: z.boolean().optional().default(false),
+  usePerplexity: z.boolean().optional().default(false),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { municipalityName, county, useFullAgent } = AgentScrapeSchema.parse(body);
+    const { municipalityName, county, useFullAgent, usePerplexity } = AgentScrapeSchema.parse(body);
     
-    console.log(`[API] Agent scrape request for ${municipalityName}`);
+    console.log(`[API] Agent scrape request for ${municipalityName} (Perplexity: ${usePerplexity})`);
     
-    if (useFullAgent) {
+    if (usePerplexity) {
+      // Use Perplexity search
+      const { perplexityOrdinanceSearch } = await import('@/lib/agents/perplexity-ordinance-agent');
+      const result = await perplexityOrdinanceSearch(municipalityName, county);
+      
+      if (result.success) {
+        return NextResponse.json({
+          success: true,
+          ordinance: {
+            title: result.title || 'Rent Control Ordinance',
+            content: result.content,
+            url: result.url,
+            confidence: result.confidence,
+          },
+          reasoning: [result.reasoning || ''],
+          citations: result.citations || [],
+          source: result.source,
+        });
+      } else {
+        return NextResponse.json({
+          success: false,
+          reasoning: [result.reasoning || ''],
+          source: result.source,
+        });
+      }
+    } else if (useFullAgent) {
       // Use intelligent search
       const result = await intelligentOrdinanceSearch(municipalityName, county);
       

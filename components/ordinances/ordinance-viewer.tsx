@@ -42,7 +42,7 @@ interface OrdinanceViewerProps {
       id: string;
       content: string;
       sectionTitle?: string | null;
-      position: number;
+      chunkIndex: number;
     }>;
     opraRequests?: Array<{
       id: string;

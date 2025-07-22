@@ -54,9 +54,49 @@ export async function POST(request: NextRequest) {
       const validation = await validateOrdinanceContent(scrapedOrdinance.fullText);
       confidence = validation.confidence;
       
-      // If confidence is low, try intelligent search
+      // If confidence is low, try Perplexity first, then intelligent search
       if (validation.confidence === 'low') {
-        console.log('[API] Low confidence in scraped content, trying intelligent search');
+        console.log('[API] Low confidence in scraped content, trying Perplexity search');
+        const { perplexityOrdinanceSearch } = await import('@/lib/agents/perplexity-ordinance-agent');
+        const perplexityResult = await perplexityOrdinanceSearch(municipalityName, county);
+        
+        if (perplexityResult.success && perplexityResult.content) {
+          scrapedOrdinance = {
+            title: perplexityResult.title || 'Rent Control Ordinance',
+            fullText: perplexityResult.content,
+            sourceUrl: perplexityResult.url || '',
+          };
+          confidence = perplexityResult.confidence || 'medium';
+        } else {
+          console.log('[API] Perplexity search failed, falling back to intelligent search');
+          const { intelligentOrdinanceSearch } = await import('@/lib/agents/ordinance-agent-simple');
+          const agentResult = await intelligentOrdinanceSearch(municipalityName, county);
+          
+          if (agentResult.success && agentResult.content) {
+            scrapedOrdinance = {
+              title: agentResult.title || 'Rent Control Ordinance',
+              fullText: agentResult.content,
+              sourceUrl: agentResult.url || '',
+            };
+            confidence = agentResult.confidence || 'medium';
+          }
+        }
+      }
+    } else {
+      // No result from basic scraper, try Perplexity first, then fallback
+      console.log('[API] No result from basic scraper, trying Perplexity search');
+      const { perplexityOrdinanceSearch } = await import('@/lib/agents/perplexity-ordinance-agent');
+      const perplexityResult = await perplexityOrdinanceSearch(municipalityName, county);
+      
+      if (perplexityResult.success && perplexityResult.content) {
+        scrapedOrdinance = {
+          title: perplexityResult.title || 'Rent Control Ordinance',
+          fullText: perplexityResult.content,
+          sourceUrl: perplexityResult.url || '',
+        };
+        confidence = perplexityResult.confidence || 'medium';
+      } else {
+        console.log('[API] Perplexity search failed, falling back to intelligent search');
         const { intelligentOrdinanceSearch } = await import('@/lib/agents/ordinance-agent-simple');
         const agentResult = await intelligentOrdinanceSearch(municipalityName, county);
         
@@ -68,20 +108,6 @@ export async function POST(request: NextRequest) {
           };
           confidence = agentResult.confidence || 'medium';
         }
-      }
-    } else {
-      // No result from basic scraper, try intelligent search
-      console.log('[API] No result from basic scraper, trying intelligent search');
-      const { intelligentOrdinanceSearch } = await import('@/lib/agents/ordinance-agent-simple');
-      const agentResult = await intelligentOrdinanceSearch(municipalityName, county);
-      
-      if (agentResult.success && agentResult.content) {
-        scrapedOrdinance = {
-          title: agentResult.title || 'Rent Control Ordinance',
-          fullText: agentResult.content,
-          sourceUrl: agentResult.url || '',
-        };
-        confidence = agentResult.confidence || 'medium';
       }
     }
     

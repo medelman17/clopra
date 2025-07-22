@@ -21,9 +21,11 @@ import {
   Download,
   Eye,
   FileDown,
-  BarChart3
+  BarChart3,
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface MunicipalityWithStatus {
   id: string;
@@ -123,6 +125,71 @@ export default function MunicipalitiesPage() {
     router.push(`/app?municipality=${encodeURIComponent(name)}&county=${encodeURIComponent(countyName)}`);
   };
 
+  const handleReset = async (municipalityId: string, name: string) => {
+    if (!confirm(`Are you sure you want to reset ${name}? This will delete all scraped ordinance data.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/municipalities/${municipalityId}/reset`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to reset municipality');
+      }
+
+      const result = await response.json();
+      
+      toast.success(`${name} has been reset. ${result.deleted.ordinancesDeleted} ordinance(s) removed.`);
+
+      // Refresh the data
+      fetchMunicipalities();
+    } catch (error) {
+      console.error('Error resetting municipality:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to reset municipality');
+    }
+  };
+
+  const handleBulkReset = async () => {
+    if (selectedMunicipalities.size === 0) {
+      toast.error('Please select municipalities to reset.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to reset ${selectedMunicipalities.size} municipalities? This will delete all their scraped ordinance data.`)) {
+      return;
+    }
+
+    let successful = 0;
+    let failed = 0;
+    
+    for (const municipalityId of selectedMunicipalities) {
+      try {
+        const response = await fetch(`/api/municipalities/${municipalityId}/reset`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          successful++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+
+    if (failed > 0) {
+      toast.error(`${successful} municipalities reset successfully, ${failed} failed.`);
+    } else {
+      toast.success(`${successful} municipalities reset successfully.`);
+    }
+
+    setSelectedMunicipalities(new Set());
+    fetchMunicipalities();
+  };
 
   const exportCSV = () => {
     if (!data) return;
@@ -145,7 +212,7 @@ export default function MunicipalitiesPage() {
     a.download = 'nj-municipalities.csv';
     a.click();
     
-    toast.file.exported('nj-municipalities.csv');
+    toast.success('Exported nj-municipalities.csv');
   };
 
   return (
@@ -300,6 +367,14 @@ export default function MunicipalitiesPage() {
                 {selectedMunicipalities.size} selected
               </span>
               <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkReset}
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Reset Selected
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedMunicipalities(new Set())}
@@ -352,6 +427,32 @@ export default function MunicipalitiesPage() {
                           <FileDown className="h-4 w-4 mr-1" />
                           Generate OPRA
                         </Button>
+                        <Button 
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleReset(municipality.id, municipality.name)}
+                          title="Reset ordinance data"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : municipality.status === 'no_ordinance' ? (
+                      <>
+                        <Button 
+                          size="sm"
+                          onClick={() => handleScrape(municipality.id, municipality.name, municipality.county)}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Re-search
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleReset(municipality.id, municipality.name)}
+                          title="Reset and clear status"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </>
                     ) : (
                       <Button 
@@ -394,6 +495,7 @@ export default function MunicipalitiesPage() {
                               size="sm" 
                               variant="ghost"
                               onClick={() => router.push(`/ordinances/${municipality.id}`)}
+                              title="View ordinances"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -401,8 +503,36 @@ export default function MunicipalitiesPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => router.push(`/app?municipalityId=${municipality.id}`)}
+                              title="Generate OPRA request"
                             >
                               <FileDown className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleReset(municipality.id, municipality.name)}
+                              title="Reset ordinance data"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : municipality.status === 'no_ordinance' ? (
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleScrape(municipality.id, municipality.name, municipality.county)}
+                              title="Re-search for ordinances"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleReset(municipality.id, municipality.name)}
+                              title="Reset and clear status"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         ) : (

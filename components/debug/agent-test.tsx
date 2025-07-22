@@ -14,7 +14,8 @@ import {
   XCircle,
   Brain,
   FileText,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 
 interface AgentResult {
@@ -24,11 +25,17 @@ interface AgentResult {
     content: string;
     url: string;
     confidence: 'high' | 'medium' | 'low';
-    sections: Array<{ number: string; title: string }>;
+    sections?: Array<{ number: string; title: string }>;
   };
   reasoning?: string[];
   searches?: Array<{ query: string; resultsFound: number }>;
   agentReasoning?: string[];
+  citations?: Array<{
+    url: string;
+    title: string;
+    snippet?: string;
+  }>;
+  source?: string;
 }
 
 export function AgentTest() {
@@ -37,7 +44,7 @@ export function AgentTest() {
   const [result, setResult] = useState<AgentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const testAgent = async (useFullAgent: boolean) => {
+  const testAgent = async (useFullAgent: boolean, usePerplexity = false) => {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -49,6 +56,7 @@ export function AgentTest() {
         body: JSON.stringify({
           municipalityName: municipality,
           useFullAgent,
+          usePerplexity,
         }),
       });
 
@@ -114,11 +122,21 @@ export function AgentTest() {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
                 Full Agent
               </Button>
+              <Button
+                onClick={() => testAgent(false, true)}
+                disabled={loading || !municipality}
+                variant="secondary"
+                className="bg-purple-100 hover:bg-purple-200 text-purple-800"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                Perplexity
+              </Button>
             </div>
             
             <p className="text-sm text-muted-foreground">
               <strong>Quick Search:</strong> Uses enhanced scraper with validation<br />
-              <strong>Full Agent:</strong> Multi-step reasoning with search refinement
+              <strong>Full Agent:</strong> Multi-step reasoning with search refinement<br />
+              <strong>Perplexity:</strong> Uses Perplexity AI for research-grade search with citations
             </p>
           </div>
         </CardContent>
@@ -153,11 +171,12 @@ export function AgentTest() {
           <CardContent>
             {result.ordinance ? (
               <Tabs defaultValue="content">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="content">Content</TabsTrigger>
                   <TabsTrigger value="sections">Sections</TabsTrigger>
                   <TabsTrigger value="reasoning">Reasoning</TabsTrigger>
                   <TabsTrigger value="searches">Searches</TabsTrigger>
+                  <TabsTrigger value="citations">Citations</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="content" className="space-y-2">
@@ -175,7 +194,7 @@ export function AgentTest() {
                 </TabsContent>
                 
                 <TabsContent value="sections" className="space-y-2">
-                  {result.ordinance.sections.length > 0 ? (
+                  {result.ordinance.sections && result.ordinance.sections.length > 0 ? (
                     result.ordinance.sections.map((section, idx) => (
                       <div key={idx} className="flex items-start gap-2 p-2 bg-muted/50 rounded">
                         <Badge variant="outline">{section.number}</Badge>
@@ -203,6 +222,40 @@ export function AgentTest() {
                       <p className="text-xs text-muted-foreground">Found {search.resultsFound} results</p>
                     </div>
                   )) || <p className="text-muted-foreground">No search history available</p>}
+                </TabsContent>
+                
+                <TabsContent value="citations" className="space-y-2">
+                  {result.source && (
+                    <div className="mb-4 p-2 bg-purple-50 rounded-lg">
+                      <p className="text-sm font-medium text-purple-800">
+                        Search method: <span className="capitalize">{result.source}</span>
+                      </p>
+                    </div>
+                  )}
+                  {result.citations && result.citations.length > 0 ? (
+                    result.citations.map((citation, idx) => (
+                      <div key={idx} className="p-3 bg-muted/50 rounded border-l-4 border-blue-200">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium">{citation.title}</h4>
+                            <a 
+                              href={citation.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-xs text-blue-600 hover:underline break-all"
+                            >
+                              {citation.url}
+                            </a>
+                            {citation.snippet && (
+                              <p className="text-xs text-muted-foreground mt-1">{citation.snippet}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No citations available</p>
+                  )}
                 </TabsContent>
               </Tabs>
             ) : (
