@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileText, Download } from 'lucide-react';
 import type { ScrapeResult } from '@/types/api';
 
 export default function Home() {
@@ -14,6 +14,11 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScrapeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [opraRequest, setOpraRequest] = useState<{
+    id: string;
+    pdfUrl: string;
+    requestText: string;
+  } | null>(null);
 
   const handleScrape = async () => {
     setLoading(true);
@@ -41,6 +46,47 @@ export default function Home() {
     }
   };
 
+  const generateOpraRequest = async (ordinanceId: string) => {
+    setLoading(true);
+    try {
+      // First analyze the ordinance
+      const analyzeResponse = await fetch(`/api/ordinances/${ordinanceId}/analyze`, {
+        method: 'POST',
+      });
+
+      if (!analyzeResponse.ok) {
+        throw new Error('Failed to analyze ordinance');
+      }
+
+      // Then generate the OPRA request with PDF
+      const response = await fetch('/api/opra-requests/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          ordinanceId,
+          includeAllCategories: true,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate OPRA request');
+      }
+
+      setOpraRequest({
+        id: data.id,
+        pdfUrl: data.pdfUrl,
+        requestText: data.requestText,
+      });
+
+      alert('OPRA request generated successfully!');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleProcess = async (ordinanceId: string) => {
     setLoading(true);
     try {
@@ -54,6 +100,9 @@ export default function Home() {
       }
 
       alert(`Ordinance processed! Created ${data.chunksCreated} chunks.`);
+      
+      // Auto-generate OPRA request after processing
+      await generateOpraRequest(ordinanceId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -198,6 +247,48 @@ export default function Home() {
                     </>
                   )}
                 </dl>
+              </CardContent>
+            </Card>
+          )}
+
+          {opraRequest && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Generated OPRA Request</CardTitle>
+                <CardDescription>
+                  Your OPRA request has been generated and is ready to download
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <Button 
+                      onClick={() => window.open(opraRequest.pdfUrl, '_blank')}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download PDF
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(opraRequest.requestText);
+                        alert('Request text copied to clipboard!');
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Copy Text
+                    </Button>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium mb-2">Preview:</h3>
+                    <div className="p-4 bg-gray-50 rounded text-sm whitespace-pre-wrap max-h-96 overflow-y-auto">
+                      {opraRequest.requestText.substring(0, 500)}...
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
