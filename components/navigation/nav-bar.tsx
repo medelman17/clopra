@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { FileText, Search, Home, FileSearch } from 'lucide-react';
+import { FileText, Search, Home, FileSearch, ScrollText } from 'lucide-react';
 
 export function NavBar() {
   const pathname = usePathname();
@@ -23,6 +23,11 @@ export function NavBar() {
       href: '/municipalities',
       label: 'Municipalities',
       icon: Search,
+    },
+    {
+      href: '/ordinances',
+      label: 'Ordinances',
+      icon: ScrollText,
     },
     {
       href: '/requests',

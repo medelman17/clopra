@@ -1,6 +1,7 @@
 'use client';
 
 import { format } from 'date-fns';
+import Link from 'next/link';
 import { 
   FileText, 
   Download, 
@@ -197,6 +198,13 @@ export function RequestDetail({ request }: RequestDetailProps) {
                   Effective {format(new Date(request.ordinance.effectiveDate), 'PP')}
                 </span>
               )}
+              <Link 
+                href={`/ordinances/${request.ordinance.id}`}
+                className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+              >
+                View Full Ordinance
+                <ExternalLink className="h-3 w-3" />
+              </Link>
               {request.ordinance.sourceUrl && (
                 <a 
                   href={request.ordinance.sourceUrl} 
