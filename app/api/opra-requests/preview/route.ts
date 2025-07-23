@@ -8,6 +8,7 @@ import { pdfStorage } from '@/lib/pdf/storage';
 const PreviewRequestSchema = z.object({
   ordinanceId: z.string(),
   selectedCategories: z.array(z.string()).optional(),
+  includeAllCategories: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -63,10 +64,17 @@ export async function POST(request: NextRequest) {
     // Generate preview PDF (base64)
     const pdfBase64 = await pdfStorage.generatePreviewPdf(requestText, requestData);
 
+    // Format categories with questions from recordsSummary
+    const categoriesWithQuestions = categoriesToUse.map(categoryId => ({
+      id: categoryId,
+      name: categoryId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      questions: recordsSummary[categoryId]?.join('\n') || '',
+    }));
+
     return NextResponse.json({
       requestText,
       pdfBase64,
-      categories: categoriesToUse,
+      categories: categoriesWithQuestions,
       recordsSummary,
     });
   } catch (error) {

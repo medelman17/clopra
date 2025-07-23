@@ -16,11 +16,13 @@ import {
   Copy,
   Download,
   ChevronRight,
-  Layers
+  Layers,
+  PenTool
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface OrdinanceViewerProps {
   ordinance: {
@@ -57,6 +59,7 @@ interface OrdinanceViewerProps {
 }
 
 export function OrdinanceViewer({ ordinance, showActions = true }: OrdinanceViewerProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('formatted');
   
@@ -164,6 +167,13 @@ export function OrdinanceViewer({ ordinance, showActions = true }: OrdinanceView
                   </a>
                 </Button>
               )}
+              <Button 
+                size="sm" 
+                onClick={() => router.push(`/ordinances/${ordinance.id}/build-request`)}
+              >
+                <PenTool className="h-4 w-4 mr-2" />
+                Build OPRA Request
+              </Button>
             </div>
           </div>
         </CardHeader>
